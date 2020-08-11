@@ -52,7 +52,7 @@ async function main() {
   if (outputLocation) {
     writeFile(outputLocation, JSON.stringify(versions), (err) => {
       if (err) throw err;
-      console.log('The file has been saved!');
+      log(`Ouput written to ${outputLocation}`)
     });
   }
 }
