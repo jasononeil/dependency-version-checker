@@ -20,14 +20,16 @@ async function main() {
   const outputLocation = cli.flags.output;
   const log = logging(cli.flags.verbose);
   const githubApi = setupGithubApi();
-
-  let versions = {};
+  let versions = [];
   
   for (const packageNameParam of packagesToCheck) {
     log(`Searching for package ${packageNameParam}`);
     for (const repo of repos) {
       log(`  In repo ${repo.repo}`);
-      versions[repo.repo] = {} // add repo to output
+      const currentRepo = {
+        repo: repo.repo,
+        dependencies: []
+      }
       const [org, repository] = repo.repo.split("/");
       const lockFile = await getLockfile(
         githubApi,
@@ -38,7 +40,10 @@ async function main() {
       const packageVersions = findVersions(lockFile, packageNameParam);
       for (const packageName of Object.keys(packageVersions)) {
         if (packageVersions[packageName].length > 0) {
-          versions[repo.repo][packageName] = packageVersions[packageName]
+          currentRepo.dependencies.push({
+            package: packageName, 
+            versions: packageVersions[packageName]
+          })
           log(
             `    Package ${packageName}: ${packageVersions[packageName].join(
               ", "
@@ -46,6 +51,7 @@ async function main() {
           );
         }
       }
+      versions.push(currentRepo)
     }
   }
 
