@@ -38,7 +38,7 @@ async function main() {
       const packageVersions = findVersions(lockFile, packageNameParam);
       for (const packageName of Object.keys(packageVersions)) {
         if (packageVersions[packageName].length > 0) {
-          versions[repo.repo][packageName] = packageVersions[packageName] // add repo to output
+          versions[repo.repo][packageName] = packageVersions[packageName]
           log(
             `    Package ${packageName}: ${packageVersions[packageName].join(
               ", "
