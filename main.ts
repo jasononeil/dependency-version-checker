@@ -1,18 +1,33 @@
 import { Octokit } from "@octokit/rest";
 import { parse, LockFileObject } from "@yarnpkg/lockfile";
 import { repos } from "./repos";
+import { writeFile } from "fs";
+const meow = require('meow');
+
+const logging = verbose => message => {
+  if (verbose) { 
+    console.log(message)
+  }
+}
 
 async function main() {
-  if (process.argv.length < 3) {
-    printUsage();
+  const cli = bootstrapCli();
+  if (cli.input.length === 0) {
+    cli.showHelp()
     process.exit(1);
   }
-  const packagesToCheck = process.argv.splice(2);
+  const packagesToCheck = cli.input;
+  const outputLocation = cli.flags.output;
+  const log = logging(cli.flags.verbose);
   const githubApi = setupGithubApi();
+
+  let versions = {};
+  
   for (const packageNameParam of packagesToCheck) {
-    console.log(`Searching for package ${packageNameParam}`);
+    log(`Searching for package ${packageNameParam}`);
     for (const repo of repos) {
-      console.log(`  In repo ${repo.repo}`);
+      log(`  In repo ${repo.repo}`);
+      versions[repo.repo] = {} // add repo to output
       const [org, repository] = repo.repo.split("/");
       const lockFile = await getLockfile(
         githubApi,
@@ -23,7 +38,8 @@ async function main() {
       const packageVersions = findVersions(lockFile, packageNameParam);
       for (const packageName of Object.keys(packageVersions)) {
         if (packageVersions[packageName].length > 0) {
-          console.log(
+          versions[repo.repo][packageName] = packageVersions[packageName] // add repo to output
+          log(
             `    Package ${packageName}: ${packageVersions[packageName].join(
               ", "
             )}`
@@ -32,16 +48,34 @@ async function main() {
       }
     }
   }
+
+  if (outputLocation) {
+    writeFile(outputLocation, JSON.stringify(versions), (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+    });
+  }
 }
 
-function printUsage() {
-  console.log(`Usage: `);
-  console.log(`  yarn list-versions <package-name>`);
-  console.log(`  yarn list-versions react`);
-  console.log(`  yarn list-versions react react-dom`);
-  console.log(`  yarn list-versions @kaizen/component-library`);
-  console.log(`  yarn list-versions "@kaizen/*"`);
-  console.log(`  yarn list-versions "@kaizen/*" "@cultureamp/*"`);
+function bootstrapCli() {
+  return meow(`
+    Usage
+      yarn list-versions <package-name>
+
+    Options
+      --version list this packages version
+      --verbose log parsing information to CLI
+      --output="log.json" location to output the data 
+    
+    Examples 
+      yarn list-versions react
+      yarn list-versions react react-dom
+      yarn list-versions @kaizen/component-library
+      yarn list-versions "@kaizen/*"
+      yarn list-versions "@kaizen/*" "@cultureamp/*"
+  `, {
+
+  })
 }
 
 function setupGithubApi(): Octokit {
