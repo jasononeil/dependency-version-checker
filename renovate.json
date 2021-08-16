@@ -1,3 +1,16 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "recreateClosed": true,
+    "rebaseStalePrs": true,
+    "branchTopic": "lockfile-maintenance",
+    "commitMessageAction": "Lockfile maintenance",
+    "commitMessageTopic": null,
+    "commitMessageExtra": null,
+    "groupName": null,
+    "prBodyDefinitions": {
+      "Change": "All locks refreshed"
+    }
+  }
 }
